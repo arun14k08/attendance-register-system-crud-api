@@ -27,7 +27,7 @@ public class DeleteStudent extends HttpServlet {
             if(affectedRows == 0){
                 System.out.println("Invalid Request!!");
 
-                response.setStatus(400);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
 

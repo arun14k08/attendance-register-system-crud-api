@@ -41,7 +41,7 @@ public class EditStudent extends HttpServlet {
 
             int affectedRows = preparedStatement.executeUpdate();
             if(affectedRows == 0){
-                response.setStatus(400);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 responseMessage.put("message", "Invalid request");
                 System.out.println("Invalid request!!");
             } else {

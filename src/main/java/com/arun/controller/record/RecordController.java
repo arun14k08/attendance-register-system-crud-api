@@ -1,13 +1,14 @@
 package com.arun.controller.record;
 
 import com.arun.repo.CollegeRepo;
+import com.mysql.cj.xdevapi.JsonParser;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import java.io.IOException;
-import java.io.PrintWriter;
+
+import java.io.*;
 import java.sql.*;
 
 public class RecordController extends HttpServlet {
@@ -66,6 +67,8 @@ public class RecordController extends HttpServlet {
             preparedStatement.setBoolean(4, request.getParameter("isPresent").equals("true"));
             preparedStatement.executeUpdate();
 
+
+
             JSONObject responseMessage = new JSONObject();
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
@@ -106,7 +109,7 @@ public class RecordController extends HttpServlet {
             PrintWriter printWriter = response.getWriter();
 
             if(affectedRows == 0){
-                response.setStatus(400);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 responseMessage.put("message", "Invalid request");
                 System.out.println("Invalid request");
             } else {
@@ -136,7 +139,7 @@ public class RecordController extends HttpServlet {
             if(affectedRows == 0){
                 System.out.println("Invalid Request!!!");
 
-                response.setStatus(400);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
 

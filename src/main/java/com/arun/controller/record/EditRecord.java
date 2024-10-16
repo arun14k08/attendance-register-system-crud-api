@@ -27,8 +27,8 @@ public class EditRecord extends HttpServlet {
 
             Connection connection =  collegeRepo.createConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(editRecordQuery);
-            preparedStatement.setInt(1, studentId);
-            preparedStatement.setInt(2, teacherId);
+            preparedStatement.setInt(1, teacherId);
+            preparedStatement.setInt(2, studentId);
             preparedStatement.setString(3, recordDate.toString());
             preparedStatement.setBoolean(4, isPresent);
             preparedStatement.setInt(5, recordId);

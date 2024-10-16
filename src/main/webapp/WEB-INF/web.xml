@@ -5,15 +5,7 @@
 <web-app>
   <display-name>Archetype Created Web Application</display-name>
   
-  <servlet>
-    <servlet-name>addStudent</servlet-name>
-    <servlet-class>com.arun.controller.student.AddStudent</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>addStudent</servlet-name>
-    <url-pattern>/add-student</url-pattern>
-  </servlet-mapping>
-  
+
   <servlet>
     <servlet-name>addRecord</servlet-name>
     <servlet-class>com.arun.controller.record.AddRecord</servlet-class>
@@ -22,7 +14,7 @@
     <servlet-name>addRecord</servlet-name>
     <url-pattern>/add-record</url-pattern>
   </servlet-mapping>
-  
+
   <servlet>
     <servlet-name>editRecord</servlet-name>
     <servlet-class>com.arun.controller.record.EditRecord</servlet-class>
@@ -31,7 +23,7 @@
     <servlet-name>editRecord</servlet-name>
     <url-pattern>/edit-record</url-pattern>
   </servlet-mapping>
-  
+
   <servlet>
     <servlet-name>getAllRecords</servlet-name>
     <servlet-class>com.arun.controller.record.GetAllRecords</servlet-class>
@@ -40,7 +32,7 @@
     <servlet-name>getAllRecords</servlet-name>
     <url-pattern>/get-all-records</url-pattern>
   </servlet-mapping>
-  
+
   <servlet>
     <servlet-name>getRecord</servlet-name>
     <servlet-class>com.arun.controller.record.GetRecord</servlet-class>
@@ -51,12 +43,30 @@
   </servlet-mapping>
 
   <servlet>
+    <servlet-name>recordController</servlet-name>
+    <servlet-class>com.arun.controller.record.RecordController</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>recordController</servlet-name>
+    <url-pattern>/records</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>deleteRecord</servlet-name>
     <servlet-class>com.arun.controller.record.DeleteRecord</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>deleteRecord</servlet-name>
     <url-pattern>/delete-record</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>addStudent</servlet-name>
+    <servlet-class>com.arun.controller.student.AddStudent</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>addStudent</servlet-name>
+    <url-pattern>/add-student</url-pattern>
   </servlet-mapping>
 
   <servlet>

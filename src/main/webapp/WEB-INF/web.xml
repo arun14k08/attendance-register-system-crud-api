@@ -31,6 +31,15 @@
     <servlet-name>studentController</servlet-name>
     <url-pattern>/students</url-pattern>
   </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>linkStudent</servlet-name>
+    <servlet-class>com.arun.controller.student.LinkStudent</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>linkStudent</servlet-name>
+    <url-pattern>/link-student</url-pattern>
+  </servlet-mapping>
 
   
 </web-app>

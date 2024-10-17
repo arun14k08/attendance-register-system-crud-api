@@ -13,7 +13,7 @@ public class ServerErrorServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         JSONObject responseMessage = new JSONObject();
-        responseMessage.put("message", "Internal Server Error with" + message);
+        responseMessage.put("message", "Internal Server Error " + message);
         PrintWriter printWriter = response.getWriter();
         printWriter.println(responseMessage);
     }

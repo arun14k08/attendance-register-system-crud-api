@@ -15,8 +15,7 @@ public class ClientErrorServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         JSONObject responseMessage = new JSONObject();
         responseMessage.put("message", errorMessage);
-        PrintWriter printWriter = null;
-        printWriter = response.getWriter();
+        PrintWriter printWriter = response.getWriter();
         printWriter.println(responseMessage);
     }
 

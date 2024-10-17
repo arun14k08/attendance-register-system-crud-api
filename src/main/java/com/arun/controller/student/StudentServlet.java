@@ -1,6 +1,9 @@
 package com.arun.controller.student;
 
+import com.arun.controller.util.Helper;
+import com.arun.controller.util.MessengerServlet;
 import com.arun.errorHandler.ClientErrorServlet;
+import com.arun.errorHandler.ServerErrorServlet;
 import com.arun.repo.CollegeRepo;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,12 +17,12 @@ import java.sql.*;
 
 public class StudentServlet extends HttpServlet {
     CollegeRepo collegeRepo = new CollegeRepo();
+    ServerErrorServlet serverErrorServlet = new ServerErrorServlet();
+    ClientErrorServlet clientErrorServlet = new ClientErrorServlet();
+    MessengerServlet messengerServlet = new MessengerServlet();
     Connection connection = null;
 
-    String editStudentQuery = "update students set name = ?, age = ?, gender = ? where id = ?";
-    String deleteStudentQuery = "delete from students where id = ?";
-
-    public void doGet(HttpServletRequest request, HttpServletResponse response){
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String getAllStudentsQuery = "select * from students";
         try {
             if(connection == null)connection = collegeRepo.createConnection();
@@ -44,42 +47,48 @@ public class StudentServlet extends HttpServlet {
             printWriter.println(finalResultData);
             System.out.println("All Students Data sent to client as JSON");
             printWriter.close();
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
+            serverErrorServlet.sendInternalServerError(request, response, "SQL");
+            throw new RuntimeException(e);
+        } catch (IOException e){
+            serverErrorServlet.sendInternalServerError(request, response, "IO");
             throw new RuntimeException(e);
         }
     }
 
     public void doPost(HttpServletRequest request, HttpServletResponse response){
         String addStudentQuery = "insert into students(name, age, gender) values(?,?,?)";
-        String addStudentTeacherLinkQuery = "";
+        Helper helper = new Helper();
         try {
             if(connection == null)connection = collegeRepo.createConnection();
-            int teacherId = Integer.parseInt(request.getParameter("teacherId"));
-            if(!findIfTeacherIdExists(teacherId)){
-                ClientErrorServlet errorServlet = new ClientErrorServlet();
-                errorServlet.sendErrorResponse(request, response,"Given Teacher ID is not valid");
+
+            if(request.getParameter("name") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Student name is not provided");
+                return;
             }
+            if(request.getParameter("age") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Age is not provided");
+                return;
+            }
+            if (request.getParameter("gender") == null) {
+                clientErrorServlet.sendErrorResponse(request, response, "Gender is not provided");
+                return;
+            }
+            String studentName = request.getParameter("name");
+            int age = Integer.parseInt(request.getParameter("age"));
+            String gender = request.getParameter("gender");
 
             PreparedStatement preparedStatement = connection.prepareStatement(addStudentQuery);
-            preparedStatement.setString(1, request.getParameter("name"));
-            preparedStatement.setInt(2, Integer.parseInt(request.getParameter("age")));
-            preparedStatement.setString(3, request.getParameter("gender"));
-
+            preparedStatement.setString(1, studentName);
+            preparedStatement.setInt(2, age);
+            preparedStatement.setString(3, gender);
             preparedStatement.executeUpdate();
 
-            System.out.print("name: " + request.getParameter("name") + " ");
-            System.out.print("age: " + request.getParameter("age") + " ");
-            System.out.print("gender: " + request.getParameter("gender") + " ");
+            System.out.print("name: " + studentName + " ");
+            System.out.print("age: " + age + " ");
+            System.out.print("gender: " + gender + " ");
             System.out.println("Student added successfully!!!");
-
-            JSONObject responseMessage = new JSONObject();
-            responseMessage.put("message", "Student Added Successfully");
-
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-
-            PrintWriter printWriter = response.getWriter();
-            printWriter.println(responseMessage);
+            messengerServlet.sendMessage(request, response, "Student Added Successfully");
 
         } catch (SQLException | IOException e) {
             throw new RuntimeException(e);
@@ -87,6 +96,7 @@ public class StudentServlet extends HttpServlet {
     }
 
     public void doPut(HttpServletRequest request, HttpServletResponse response){
+        String editStudentQuery = "update students set name = ?, age = ?, gender = ? where id = ?";
         try {
             String studentName = request.getParameter("name");
             int age = Integer.parseInt(request.getParameter("age"));
@@ -126,6 +136,7 @@ public class StudentServlet extends HttpServlet {
     }
 
     public void doDelete(HttpServletRequest request, HttpServletResponse response){
+        String deleteStudentQuery = "delete from students where id = ?";
         try {
             int studentId = Integer.parseInt(request.getParameter("id"));
             if(connection == null) connection = collegeRepo.createConnection();
@@ -156,17 +167,5 @@ public class StudentServlet extends HttpServlet {
         }
     }
 
-    public boolean findIfTeacherIdExists(int teacherId){
-        String checkQuery = "select * from teachers where id = ?";
-            try {
-                if(connection == null) connection = collegeRepo.createConnection();
-                PreparedStatement preparedStatement = connection.prepareStatement(checkQuery);
-                preparedStatement.setInt(1, teacherId);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                return resultSet.next();
 
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-    }
 }

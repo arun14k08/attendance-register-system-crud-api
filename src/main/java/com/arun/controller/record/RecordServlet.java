@@ -56,7 +56,7 @@ public class RecordServlet extends HttpServlet {
         }
     }
 
-    public void doPost(HttpServletRequest request, HttpServletResponse response){
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String addRecordQuery = "insert into records (teacherId, studentId, recordDate, isPresent) " +
                 "values(?,?,?,?)";
         try{
@@ -67,8 +67,6 @@ public class RecordServlet extends HttpServlet {
             preparedStatement.setString(3, request.getParameter("recordDate"));
             preparedStatement.setBoolean(4, request.getParameter("isPresent").equals("true"));
             preparedStatement.executeUpdate();
-
-
 
             JSONObject responseMessage = new JSONObject();
             response.setContentType("application/json");
@@ -82,7 +80,11 @@ public class RecordServlet extends HttpServlet {
             preparedStatement.close();
 
 
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
+            serverErrorServlet.sendInternalServerError(request, response, "SQL");
+            throw new RuntimeException(e);
+        } catch (IOException e){
+            serverErrorServlet.sendInternalServerError(request, response, "IO");
             throw new RuntimeException(e);
         }
     }

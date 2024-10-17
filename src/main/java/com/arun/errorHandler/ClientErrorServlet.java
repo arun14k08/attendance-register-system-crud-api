@@ -18,5 +18,13 @@ public class ClientErrorServlet extends HttpServlet {
         PrintWriter printWriter = response.getWriter();
         printWriter.println(responseMessage);
     }
-
+    public void sendErrorResponse(HttpServletRequest request, HttpServletResponse response, String errorMessage, int httpCode) throws IOException {
+        response.setStatus(httpCode);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        JSONObject responseMessage = new JSONObject();
+        responseMessage.put("message", errorMessage);
+        PrintWriter printWriter = response.getWriter();
+        printWriter.println(responseMessage);
+    }
 }

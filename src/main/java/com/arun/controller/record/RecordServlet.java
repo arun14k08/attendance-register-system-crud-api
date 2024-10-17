@@ -1,9 +1,10 @@
 package com.arun.controller.record;
 
+import com.arun.controller.util.Helper;
+import com.arun.controller.util.MessengerServlet;
 import com.arun.errorHandler.ClientErrorServlet;
 import com.arun.errorHandler.ServerErrorServlet;
 import com.arun.repo.CollegeRepo;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +18,8 @@ public class RecordServlet extends HttpServlet {
     CollegeRepo collegeRepo = new CollegeRepo();
     ServerErrorServlet serverErrorServlet = new ServerErrorServlet();
     ClientErrorServlet clientErrorServlet = new ClientErrorServlet();
+    MessengerServlet messengerServlet = new MessengerServlet();
+    Helper helper = new Helper();
     Connection connection = null;
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -39,13 +42,9 @@ public class RecordServlet extends HttpServlet {
                 finalResultData.put(row);
             }
 
-            PrintWriter printWriter = response.getWriter();
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            printWriter.print(finalResultData);
-            System.out.println("Records sent to client as JSON");
-            preparedStatement.close();
-            printWriter.close();
+        messengerServlet.sendMessage(request, response, finalResultData);
+        System.out.println("Records sent to client as JSON");
+        preparedStatement.close();
 
         } catch (SQLException e) {
             serverErrorServlet.sendInternalServerError(request, response, "SQL");
@@ -60,22 +59,54 @@ public class RecordServlet extends HttpServlet {
         String addRecordQuery = "insert into records (teacherId, studentId, recordDate, isPresent) " +
                 "values(?,?,?,?)";
         try{
+            if(request.getParameter("teacherId") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Teacher ID is not provided");
+                return;
+            }
+            if(request.getParameter("studentId") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Student ID is not provided");
+                return;
+            }
+            if(request.getParameter("recordDate") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "record Date is not provided");
+                return;
+            }
+            if(request.getParameter("isPresent") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "isPresent value is not provided");
+                return;
+            }
+            int teacherId = Integer.parseInt(request.getParameter("teacherId"));
+            int studentId = Integer.parseInt(request.getParameter("studentId"));
+            String date = request.getParameter("recordDate");
+            boolean isPresent = request.getParameter("isPresent").equals("true");
+
+            if(!helper.isStudentIdValid(studentId)){
+                clientErrorServlet.sendErrorResponse(request, response, "Student ID is invalid");
+                return;
+            }
+            if(!helper.isTeacherIdValid(teacherId)){
+                clientErrorServlet.sendErrorResponse(request, response, "Teacher ID is invalid");
+                return;
+            }
+            if(!helper.isTeacherStudentLinked(teacherId, studentId)){
+                clientErrorServlet.sendErrorResponse(request, response, "Student is not linked with the provided teacher");
+                return;
+            }
+            if(helper.isRecordExists(studentId, teacherId, date)){
+                clientErrorServlet.sendErrorResponse(request, response, "Record for the same date exists");
+                return;
+            }
+
+
             if(connection == null) connection = collegeRepo.createConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(addRecordQuery);
-            preparedStatement.setString(1, request.getParameter("teacherId"));
-            preparedStatement.setString(2, request.getParameter("studentId"));
-            preparedStatement.setString(3, request.getParameter("recordDate"));
-            preparedStatement.setBoolean(4, request.getParameter("isPresent").equals("true"));
+            preparedStatement.setInt(1, teacherId);
+            preparedStatement.setInt(2, studentId);
+            preparedStatement.setString(3, date);
+            preparedStatement.setBoolean(4, isPresent);
             preparedStatement.executeUpdate();
 
-            JSONObject responseMessage = new JSONObject();
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-
-            PrintWriter printWriter = response.getWriter();
-            responseMessage.put("message", "Record Added successfully");
-            printWriter.println(responseMessage);
-
+            messengerServlet.sendMessage(request, response, "Record Added successfully");
             System.out.println("Record added successfully!!!");
             preparedStatement.close();
 
@@ -94,37 +125,65 @@ public class RecordServlet extends HttpServlet {
                 "set teacherId = ?, studentId = ?, recordDate = ?,isPresent = ?   " +
                 "where recordId = ?";
         try{
-            if(connection == null) connection = collegeRepo.createConnection();
+            if(request.getParameter("recordId") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Record ID is not provided");
+                return;
+            }
+            if(request.getParameter("teacherId") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Teacher ID is not provided");
+                return;
+            }
+            if(request.getParameter("studentId") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Student ID is not provided");
+                return;
+            }
+            if(request.getParameter("recordDate") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "record Date is not provided");
+                return;
+            }
+            if(request.getParameter("isPresent") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "isPresent value is not provided");
+                return;
+            }
             int recordId = Integer.parseInt(request.getParameter("recordId"));
-            int studentId = Integer.parseInt(request.getParameter("studentId"));
             int teacherId = Integer.parseInt(request.getParameter("teacherId"));
-            Date recordDate = Date.valueOf(request.getParameter("recordDate"));
-            boolean isPresent = Boolean.parseBoolean(request.getParameter("isPresent"));
+            int studentId = Integer.parseInt(request.getParameter("studentId"));
+            String date = request.getParameter("recordDate");
+            boolean isPresent = request.getParameter("isPresent").equals("true");
+
+            if(!helper.isStudentIdValid(studentId)){
+                clientErrorServlet.sendErrorResponse(request, response, "Student ID is invalid");
+                return;
+            }
+            if(!helper.isTeacherIdValid(teacherId)){
+                clientErrorServlet.sendErrorResponse(request, response, "Teacher ID is invalid");
+                return;
+            }
+            if(!helper.isRecordIdValid(recordId)){
+                clientErrorServlet.sendErrorResponse(request, response, "Record ID is invalid");
+                return;
+            }
+            if(!helper.isTeacherStudentLinked(teacherId, studentId)){
+                clientErrorServlet.sendErrorResponse(request, response, "Student is not linked with the provided teacher");
+                return;
+            }
+            if(helper.isRecordExists(studentId, teacherId, date)){
+                clientErrorServlet.sendErrorResponse(request, response, "Record for the same date exists");
+                return;
+            }
+
+            if(connection == null) connection = collegeRepo.createConnection();
 
             PreparedStatement preparedStatement = connection.prepareStatement(editRecordQuery);
             preparedStatement.setInt(1, teacherId);
             preparedStatement.setInt(2, studentId);
-            preparedStatement.setString(3, recordDate.toString());
+            preparedStatement.setString(3, date);
             preparedStatement.setBoolean(4, isPresent);
             preparedStatement.setInt(5, recordId);
 
-            int affectedRows = preparedStatement.executeUpdate();
-            JSONObject responseMessage = new JSONObject();
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            PrintWriter printWriter = response.getWriter();
-
-            if(affectedRows == 0){
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                responseMessage.put("message", "Invalid request");
-                System.out.println("Invalid request");
-            } else {
-                responseMessage.put("message", "Record Edited successfully");
-                System.out.println("Record Edited successfully!!!");
-            }
-
-            printWriter.println(responseMessage);
-
+            preparedStatement.executeUpdate();
+            messengerServlet.sendMessage(request, response, "Record Edited successfully");
+            System.out.println("Record Edited successfully!!!");
 
         } catch (SQLException | IOException e) {
             throw new RuntimeException(e);
@@ -135,16 +194,16 @@ public class RecordServlet extends HttpServlet {
         try{
             if(connection == null) connection = collegeRepo.createConnection();
             int recordId = Integer.parseInt(request.getParameter("recordId"));
-            boolean recordExists = findIfRecordExist(recordId);
-            if(recordExists){
-                PreparedStatement preparedStatement = connection.prepareStatement(deleteRecordQuery);
-                preparedStatement.setInt(1, recordId);
-                preparedStatement.executeUpdate();
-                System.out.println("Record deleted");
-                this.doGet(request, response);
-            } else {
-                clientErrorServlet.sendErrorResponse(request, response, "Given Record ID is Invalid");
+
+            if(!helper.isRecordIdValid(recordId)){
+                clientErrorServlet.sendErrorResponse(request,response,"Record ID is invalid");
+                return;
             }
+            PreparedStatement preparedStatement = connection.prepareStatement(deleteRecordQuery);
+            preparedStatement.setInt(1, recordId);
+            preparedStatement.executeUpdate();
+            messengerServlet.sendMessage(request, response, "Record Deleted Successfully");
+            System.out.println("Record deleted successfully");
 
         } catch (SQLException e ) {
             serverErrorServlet.sendInternalServerError(request, response, "SQL");
@@ -155,14 +214,6 @@ public class RecordServlet extends HttpServlet {
         }
     }
 
-    public Boolean findIfRecordExist(int recordId) throws SQLException{
-        String findWithIdQuery = "select * from records where recordId = ?";
-        if(connection == null) connection = collegeRepo.createConnection();
-        PreparedStatement preparedStatement = connection.prepareStatement(findWithIdQuery);
-        preparedStatement.setInt(1, recordId);
-        ResultSet resultSet = preparedStatement.executeQuery();
-        return resultSet.next();
-    }
 
 
 }

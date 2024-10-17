@@ -30,15 +30,15 @@ public class LinkStudent extends HttpServlet {
             if(connection == null) connection = collegeRepo.createConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(addStudentTeacherLinkQuery);
 
-            if(!helper.isTeacherExists(teacherId) && !helper.isStudentExists(studentId)){
+            if(!helper.isTeacherIdValid(teacherId) && !helper.isStudentIdValid(studentId)){
                 clientErrorServlet.sendErrorResponse(request, response, ":Both Student and Teacher ID is Invalid");
                 return;
             }
-            if(!helper.isTeacherExists(teacherId)){
+            if(!helper.isTeacherIdValid(teacherId)){
                 clientErrorServlet.sendErrorResponse(request, response, "Given Teacher Id is Invalid");
                 return;
             }
-            if(!helper.isStudentExists(studentId)){
+            if(!helper.isStudentIdValid(studentId)){
                 clientErrorServlet.sendErrorResponse(request, response, "Given Student Id is Invalid");
                 return;
             }

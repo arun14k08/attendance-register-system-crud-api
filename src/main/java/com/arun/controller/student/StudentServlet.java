@@ -12,7 +12,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.*;
 
 public class StudentServlet extends HttpServlet {
@@ -20,6 +19,7 @@ public class StudentServlet extends HttpServlet {
     ServerErrorServlet serverErrorServlet = new ServerErrorServlet();
     ClientErrorServlet clientErrorServlet = new ClientErrorServlet();
     MessengerServlet messengerServlet = new MessengerServlet();
+    Helper helper = new Helper();
     Connection connection = null;
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -40,25 +40,17 @@ public class StudentServlet extends HttpServlet {
                 }
                 finalResultData.put(row);
             }
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-
-            PrintWriter printWriter = response.getWriter();
-            printWriter.println(finalResultData);
+            messengerServlet.sendMessage(request, response, finalResultData);
             System.out.println("All Students Data sent to client as JSON");
-            printWriter.close();
         } catch (SQLException e) {
             serverErrorServlet.sendInternalServerError(request, response, "SQL");
-            throw new RuntimeException(e);
-        } catch (IOException e){
-            serverErrorServlet.sendInternalServerError(request, response, "IO");
             throw new RuntimeException(e);
         }
     }
 
-    public void doPost(HttpServletRequest request, HttpServletResponse response){
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String addStudentQuery = "insert into students(name, age, gender) values(?,?,?)";
-        Helper helper = new Helper();
+
         try {
             if(connection == null)connection = collegeRepo.createConnection();
 
@@ -90,19 +82,46 @@ public class StudentServlet extends HttpServlet {
             System.out.println("Student added successfully!!!");
             messengerServlet.sendMessage(request, response, "Student Added Successfully");
 
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
+            serverErrorServlet.sendInternalServerError(request, response, "SQL");
+            throw new RuntimeException(e);
+        } catch (IOException e){
+            serverErrorServlet.sendInternalServerError(request, response, "IO");
             throw new RuntimeException(e);
         }
     }
 
-    public void doPut(HttpServletRequest request, HttpServletResponse response){
+    public void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String editStudentQuery = "update students set name = ?, age = ?, gender = ? where id = ?";
         try {
+            if(connection == null)connection = collegeRepo.createConnection();
+
+            if(request.getParameter("name") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Student name is not provided");
+                return;
+            }
+            if(request.getParameter("age") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Age is not provided");
+                return;
+            }
+            if (request.getParameter("gender") == null) {
+                clientErrorServlet.sendErrorResponse(request, response, "Gender is not provided");
+                return;
+            }
+            if(request.getParameter("id") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Student ID is not provided");
+                return;
+            }
+
             String studentName = request.getParameter("name");
             int age = Integer.parseInt(request.getParameter("age"));
             String gender = request.getParameter("gender");
-
             int studentId = Integer.parseInt(request.getParameter("id"));
+
+            if(!helper.isStudentIdValid(studentId)){
+                clientErrorServlet.sendErrorResponse(request,response, "Student ID is invalid");
+                return;
+            }
 
             if(connection == null) connection = collegeRepo.createConnection();
 
@@ -111,61 +130,57 @@ public class StudentServlet extends HttpServlet {
             preparedStatement.setInt(2, age);
             preparedStatement.setString(3, gender);
             preparedStatement.setInt(4, studentId);
+            preparedStatement.executeUpdate();
 
-            JSONObject responseMessage = new JSONObject();
+            messengerServlet.sendMessage(request, response, "Student Edited successfully");
+            System.out.println("Student Edited successfully");
 
-            response.setCharacterEncoding("UTF-8");
-            response.setContentType("application/json");
-
-            PrintWriter printWriter = response.getWriter();
-
-            int affectedRows = preparedStatement.executeUpdate();
-            if(affectedRows == 0){
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                responseMessage.put("message", "Invalid request");
-                System.out.println("Invalid request!!");
-            } else {
-                responseMessage.put("message", "Student Edited successfully");
-                System.out.println("Student Data edited for student id = " + studentId );
-            }
-
-            printWriter.println(responseMessage);
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
+            serverErrorServlet.sendInternalServerError(request, response, "SQL");
+            throw new RuntimeException(e);
+        } catch (IOException e){
+            serverErrorServlet.sendInternalServerError(request, response, "IO");
             throw new RuntimeException(e);
         }
     }
 
-    public void doDelete(HttpServletRequest request, HttpServletResponse response){
+    public void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String deleteStudentQuery = "delete from students where id = ?";
+
         try {
+            if(request.getParameter("id") == null){
+                clientErrorServlet.sendErrorResponse(request, response, "Student ID is not provided");
+                return;
+            }
             int studentId = Integer.parseInt(request.getParameter("id"));
+
+            if(!helper.isStudentIdValid(studentId)){
+                clientErrorServlet.sendErrorResponse(request,response,"Student ID is invalid");
+                return;
+            }
+
+            helper.deleteStudentLink(studentId);
+            helper.deleteStudentRecords(studentId);
+
             if(connection == null) connection = collegeRepo.createConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(deleteStudentQuery);
             preparedStatement.setInt(1, studentId);
+            preparedStatement.executeUpdate();
+            messengerServlet.sendMessage(request,response, "Student Deleted successfully");
 
-            int affectedRows = preparedStatement.executeUpdate();
 
-            if(affectedRows == 0){
-                System.out.println("Invalid Request!!");
-
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.setContentType("application/json");
-                response.setCharacterEncoding("UTF-8");
-
-                JSONObject responseMessage = new JSONObject();
-                responseMessage.put("message", "Invalid Request");
-                PrintWriter printWriter = response.getWriter();
-                printWriter.println(responseMessage);
-
-            } else {
-                System.out.println("Deleted the student successfully");
-                response.sendRedirect("/get-all-students");
-            }
-
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
+            serverErrorServlet.sendInternalServerError(request, response, "SQL");
+            throw new RuntimeException(e);
+        } catch (IOException e){
+            serverErrorServlet.sendInternalServerError(request, response, "IO");
             throw new RuntimeException(e);
         }
     }
+
+//    public void doPatch(HttpServletResponse request, HttpServletResponse response){
+//
+//    }
 
 
 }
